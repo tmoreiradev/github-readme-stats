@@ -59,6 +59,15 @@ const fetcher = (variables, token) => {
  * @param {number} count_weight Weightage to be given to count.
  * @returns {Promise<TopLangData>} Top languages data.
  */
+/**
+ * Display-name overrides applied before aggregation, so that GitHub's
+ * linguist name is replaced on the card (xBase is how linguist labels
+ * TOTVS ADVPL/TLPP sources).
+ */
+const LANGUAGE_DISPLAY_NAMES = {
+  xBase: "ADVPL/TLPP",
+};
+
 const fetchTopLanguages = async (
   username,
   exclude_repo = [],
@@ -115,6 +124,13 @@ const fetchTopLanguages = async (
     .filter((node) => node.languages.edges.length > 0)
     // flatten the list of language nodes
     .reduce((acc, curr) => curr.languages.edges.concat(acc), [])
+    // apply display-name overrides before aggregating by name
+    .map((edge) => {
+      const display = LANGUAGE_DISPLAY_NAMES[edge.node.name];
+      return display
+        ? { ...edge, node: { ...edge.node, name: display } }
+        : edge;
+    })
     .reduce((acc, prev) => {
       // get the size of the language (bytes)
       let langSize = prev.size;
